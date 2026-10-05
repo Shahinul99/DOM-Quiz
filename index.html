@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>DOM Quiz</title>
+    <style>
+        :root {
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            --bg: #f1f0f7;
+            --card: #fcfbff;
+            --ink: #241f3a;
+            --muted: #6f6a88;
+            --line: #d6d2e6;
+            --accent: #5a47c9;
+            --ai: #fff;
+            --ok: #2f7d57;
+            --bad: #b3412f
+        }
+
+        @media(prefers-color-scheme:dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #15131f;
+                --card: #1e1b2c;
+                --ink: #e9e6f7;
+                --muted: #9a95b5;
+                --line: #322e48;
+                --accent: #9d8cff;
+                --ai: #15131f;
+                --ok: #6cc596;
+                --bad: #e07a67
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #15131f;
+            --card: #1e1b2c;
+            --ink: #e9e6f7;
+            --muted: #9a95b5;
+            --line: #322e48;
+            --accent: #9d8cff;
+            --ai: #15131f;
+            --ok: #6cc596;
+            --bad: #e07a67
+        }
+
+        html {
+            scroll-padding-top: env(safe-area-inset-top, 0px)
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font: 16px/1.5 "Avenir Next", "Segoe UI", system-ui, sans-serif
+        }
+
+        main {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 28px 16px 48px
+        }
+
+        h1 {
+            font: 700 2rem/1.15 Georgia, serif;
+            margin: 0 0 6px
+        }
+
+        .meta {
+            color: var(--muted);
+            margin: 0 0 16px
+        }
+
+        .bar {
+            height: 6px;
+            background: var(--line);
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden
+        }
+
+        .bar>div {
+            height: 100%;
+            background: var(--accent);
+            transition: width .25s
+        }
+
+        .q {
+            font: 600 1.2rem/1.35 Georgia, serif;
+            margin: 0 0 14px
+        }
+
+        .opts {
+            display: grid;
+            gap: 8px
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+            text-align: left;
+            color: var(--ink);
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px 14px
+        }
+
+        button.primary {
+            background: var(--accent);
+            color: var(--ai);
+            border-color: var(--accent);
+            font-weight: 600;
+            margin-top: 14px
+        }
+
+        button.ok {
+            border-color: var(--ok);
+            background: color-mix(in srgb, var(--ok) 15%, var(--card))
+        }
+
+        button.bad {
+            border-color: var(--bad);
+            background: color-mix(in srgb, var(--bad) 15%, var(--card))
+        }
+
+        button:disabled {
+            cursor: default
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px
+        }
+
+        .note {
+            margin: 12px 0 0;
+            color: var(--muted)
+        }
+
+        .score {
+            font: 700 3rem/1 Georgia, serif;
+            margin: 12px 0
+        }
+    </style>
+</head>
+
+<body>
+    <main id="app"></main>
+    <script>
+        const QUESTIONS = [
+            { q: "Which method creates a new HTML element?", o: ["document.createElement()", "document.makeNode()", "element.new()", "document.build()"], a: 0, n: "createElement takes a tag name and returns a detached element." },
+            { q: "Which method finds the first element matching a CSS selector?", o: ["getElement()", "querySelector()", "findFirst()", "select()"], a: 1, n: "querySelectorAll returns every match as a NodeList." },
+            { q: "How do you react to a click on a button?", o: ["button.onpress()", "button.listen('click')", "button.addEventListener('click', fn)", "button.click = fn"], a: 2, n: "addEventListener lets you attach several handlers to one event." },
+            { q: "Which property changes an element's text safely, without parsing HTML?", o: ["innerHTML", "textContent", "outerHTML", "htmlText"], a: 1, n: "textContent never parses markup, so user input can't inject tags." },
+            { q: "What does parent.append(child) do?", o: ["Copies child into parent", "Adds child as the last child of parent", "Replaces all of parent's children", "Adds child before parent"], a: 1, n: "Appending a node that is already in the page moves it." },
+            { q: "Which call removes an element from the page?", o: ["el.remove()", "el.delete()", "el.hide()", "el.clear()"], a: 0, n: "hide() isn't a DOM method; use the hidden attribute to hide." },
+            { q: "What does el.classList.toggle('on') do?", o: ["Removes every class", "Adds 'on' if missing, removes it if present", "Always adds 'on'", "Renames the class to 'on'"], a: 1, n: "Pass true or false as a second argument to force one direction." },
+            { q: "Where do custom data-* attributes appear in JavaScript?", o: ["el.data", "el.attrs", "el.dataset", "el.custom"], a: 2, n: "data-user-id becomes el.dataset.userId." }];
+        function h(t, p = {}, ...k) { const e = document.createElement(t); for (const [n, v] of Object.entries(p)) { if (n.startsWith("on")) e.addEventListener(n.slice(2), v); else if (n in e) e[n] = v; else e.setAttribute(n, v) } e.append(...k.flat().filter(Boolean)); return e }
+        const app = document.getElementById("app"); let i = 0, score = 0;
+        function show() {
+            if (i >= QUESTIONS.length) return done();
+            const Q = QUESTIONS[i]; let answered = false;
+            const note = h("p", { className: "note", role: "status" });
+            const next = h("button", { className: "primary", hidden: true, onclick: () => { i++; show() } }, i === QUESTIONS.length - 1 ? "See score" : "Next question");
+            const btns = Q.o.map((text, idx) => h("button", {
+                type: "button", onclick: () => {
+                    if (answered) return; answered = true;
+                    if (idx === Q.a) score++;
+                    btns.forEach((b, j) => { b.disabled = true; if (j === Q.a) b.classList.add("ok"); else if (j === idx) b.classList.add("bad") });
+                    note.textContent = (idx === Q.a ? "Correct. " : "Not quite. ") + Q.n; next.hidden = false; next.focus()
+                }
+            }, text));
+            app.replaceChildren(h("h1", {}, "DOM quiz"), h("p", { className: "meta" }, `Question ${i + 1} of ${QUESTIONS.length}`),
+                h("div", { className: "bar" }, h("div", { style: `width:${i / QUESTIONS.length * 100}%` })),
+                h("p", { className: "q" }, Q.q), h("div", { className: "opts" }, btns), note, next);
+        }
+        function done() {
+            const pct = Math.round(score / QUESTIONS.length * 100);
+            app.replaceChildren(h("h1", {}, "Quiz complete"), h("div", { className: "score" }, `${score}/${QUESTIONS.length}`),
+                h("p", { className: "meta" }, pct >= 75 ? "Strong DOM skills. Try building something with them." : "Good start. Review the notes and try again."),
+                h("button", { className: "primary", onclick: () => { i = 0; score = 0; show() } }, "Play again"));
+        }
+        show();
+    </script>
+</body>
+
+</html>
